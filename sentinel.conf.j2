@@ -1,0 +1,7 @@
+{% for host in vars['ansible_play_hosts_all'] if hostvars[host]['role'] == "master" %}
+sentinel monitor mymaster: {{ hostvars[host]['ansible_host'] }} 6379 2
+sentinel auth-pass mymaster: {{ REDIS_PASSWORD }}
+sentinel down-after-milliseconds mymaster: 5000
+sentinel failover-timeout mymaster: 60000
+protected-mode: no
+{% endfor %}

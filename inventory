@@ -1,0 +1,4 @@
+[redis]
+server-01 ansible_host=45.32.121.40 role=master
+server-02 ansible_host=139.180.217.55 role=replica
+server-03 ansible_host=139.180.156.164 role=replica

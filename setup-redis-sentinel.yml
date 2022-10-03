@@ -1,0 +1,71 @@
+- hosts: redis
+  become: yes
+  remote_user: root
+  vars_files:
+    - vars.yml
+
+  handlers:
+    - name: restart redis
+      service:
+        name: redis-server
+        state: restarted
+    - name: restart sentinel
+      service:
+        name: redis-sentinel
+        state: restarted
+    - name: reload ufw
+      ufw:
+        state: reloaded
+  tasks:
+    - name: Add redis signing key
+      apt_key:
+        url: https://packages.redis.io/gpg
+        keyring: /usr/share/keyrings/redis-archive-keyring.gpg
+    - name: Add redis repo
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb {{ ansible_distribution_release }} main"
+        state: present
+    - name: Install redis-server
+      apt:
+        name: redis-server
+        update_cache: yes
+    - name: Install redis-sentinel
+      apt:
+        name: redis-sentinel
+    - name: Allow all traffic from all active hosts on this host
+      ufw:
+        rule: allow
+        src: "{{ hostvars[item]['ansible_host'] }}"
+        comment: "Server {{ item }}"
+      with_items: "{{ vars['ansible_play_hosts_all'] }}"
+      notify:
+        - reload ufw
+    - name: Wait Redis Started
+      wait_for:
+        port: 6379
+    - name: Update redis.conf
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: "^{{ item.split(':')[0].strip() | regex_escape() }}.*$"
+        line: "{{ item.split(':')[0].strip() }} {{ item.split(':')[1].strip() }}"
+        state: present
+      loop: "{{ lookup('template', './redis.conf.j2').splitlines() | reject('match', '^$') | reject('match', '^#.*') | list }}"
+      register: redis_conf_file
+    - name: restart redis
+      when: redis_conf_file is changed
+      service:
+        name: redis-server
+        state: restarted
+    - name: Update sentinel.conf
+      lineinfile:
+        path: /etc/redis/sentinel.conf
+        regexp: "^{{ item.split(':')[0].strip() | regex_escape() }}.*$"
+        line: "{{ item.split(':')[0].strip() }} {{ item.split(':')[1].strip() }}"
+        state: present
+      loop: "{{ lookup('template', './sentinel.conf.j2').splitlines() | reject('match', '^$') | reject('match', '^#.*') | list }}"
+      register: sentinel_conf_file
+    - name: restart sentinel
+      when: sentinel_conf_file is changed
+      service:
+        name: redis-sentinel
+        state: restarted
