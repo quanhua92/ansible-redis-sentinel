@@ -15,4 +15,5 @@ Ansible Playbook to deploy a High Availability Redis with Sentinel
 
 ## Notice
 
-The configuration for Redis and Sentinel are defined in `redis.conf.j2` and `sentinel.conf.j2`. The playbook explicitly uses `:` to separate each line and use `regexp` to update the corresponding file on the server. Therefore, the playbook will only touch the necessary setting and doesn't modify any other default settings.
+1. The configuration for Redis and Sentinel are defined in `redis.conf.j2` and `sentinel.conf.j2`. The playbook explicitly uses `:` to separate each line and use `regexp` to update the corresponding file on the server. Therefore, the playbook will only touch the necessary setting and doesn't modify any other default settings.
+2. Make sure that the `role` in `inventory` is correct before running the playbook. For example, if the Sentinel changes the master to a replica. You need to change the `role` to match the current master-replica setup. Otherwise, the playbook will mess up the setting of Sentinel.

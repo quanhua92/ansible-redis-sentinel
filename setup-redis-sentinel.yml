@@ -43,6 +43,16 @@
     - name: Wait Redis Started
       wait_for:
         port: 6379
+    - name: Enable service redis-server and ensure it is not masked
+      ansible.builtin.systemd:
+        name: redis-server
+        enabled: yes
+        masked: no
+    - name: Enable service redis-sentinel and ensure it is not masked
+      ansible.builtin.systemd:
+        name: redis-sentinel
+        enabled: yes
+        masked: no
     - name: Update redis.conf
       lineinfile:
         path: /etc/redis/redis.conf
